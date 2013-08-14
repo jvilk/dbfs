@@ -14,13 +14,21 @@
       return _ref;
     }
 
-    DropboxFile.prototype.syncSync = function() {};
+    DropboxFile.prototype.syncSync = function() {
+      this._fs.client.write(this._path, this._buffer.toString(), function(error, stat) {
+        if (error) {
+          return console.log(error);
+        }
+      });
+    };
 
-    DropboxFile.prototype.closeSync = function() {};
+    DropboxFile.prototype.closeSync = function() {
+      return this.syncSync();
+    };
 
     return DropboxFile;
 
-  })(BrowserFS.PreloadFile);
+  })(BrowserFS.File.PreloadFile);
 
   BrowserFS.FileSystem.Dropbox = (function(_super) {
     __extends(Dropbox, _super);

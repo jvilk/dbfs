@@ -1,9 +1,13 @@
 window.db = window.Dropbox
 
-class BrowserFS.File.DropboxFile extends BrowserFS.PreloadFile
+class BrowserFS.File.DropboxFile extends BrowserFS.File.PreloadFile
   syncSync: ->
+    @_fs.client.write(@_path, @_buffer.toString(), (error, stat) ->
+      console.log error if error
+    )
+    return
 
-  closeSync: ->
+  closeSync: -> @syncSync()
 
 class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   constructor: ->

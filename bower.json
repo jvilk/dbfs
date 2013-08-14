@@ -1,13 +1,14 @@
 {
-  "name": "dropbox-fs",
+  "name": "dropboxfs",
   "version": "0.0.1",
   "main": "dropbox.js",
   "ignore": [
     "**/.*",
     "node_modules",
-    "bower_components",
+    "vendor",
     "test",
-    "tests"
+    "tests",
+    "*.coffee"
   ],
   "dependencies": {
     "browserfs": "~0.2.0",

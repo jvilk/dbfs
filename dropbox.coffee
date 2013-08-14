@@ -1,22 +1,26 @@
+window.db = window.Dropbox
+
 class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   constructor: ->
-    @init_client = new Dropbox.Client
-      key: 'vmtobv6ojlapzfg'
+    @init_client = new db.Client
+      key: 'u8sx6mjp5bxvbg4'
       sandbox: true
 
-    client.authDriver(new Dropbox.AuthDriver.Redirect({rememberUser: true})
+    @init_client.authDriver(new db.AuthDriver.Redirect({rememberUser: true}))
 
-    @init_client.authenticate (error, authed_client) =>
+    @init_client.authenticate((error, authed_client) =>
       if error
         console.error 'Error: could not connect to Dropbox.'
         console.error error
         return
 
       # debug
-      authed_client.getUserInfo (error, info) ->
+      authed_client.getUserInfo((error, info) ->
         console.log info.name
+      )
 
       @client = authed_client
+    )
 
   getName: -> 'Dropbox'
 

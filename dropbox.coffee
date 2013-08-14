@@ -24,7 +24,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
 
   getName: -> 'Dropbox'
 
-  isAvailable: -> @client.isAuthenticated()
+  @isAvailable: -> true# @client.isAuthenticated()
 
   isReadOnly: -> false
 
@@ -46,14 +46,27 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     )
 
   open: (path, flags, mode, cb) ->
-    @client.readFile((error, contents, stat, range) ->
-
+    fs = this
+    @client.readFile(path, {}, (error, contents, stat, range) ->
+      cb(fs, path, mode, stat, contents)
     )
 
-  unlink: (path, cb) ->
+  _remove: (path, cb) ->
+    @client.remove(path, (error, stat) ->
+      cb error if error
+    )
 
-  rmdir: (path, cb) ->
+  unlink: (path, cb) -> @_remove(path, cb)
+
+  rmdir: (path, cb) -> @_remove(path, cb)
 
   mkdir: (path, mode, cb) ->
+    @client.mkdir(path, (error, stat) ->
+      cb error if error
+    )
 
   readdir: (path, cb) ->
+    @client.readdir(path, {}, (error, files, dir_stat, content_stats) ->
+      cb(error, files)
+    )
+

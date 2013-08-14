@@ -34,8 +34,8 @@
       return 'Dropbox';
     };
 
-    Dropbox.prototype.isAvailable = function() {
-      return this.client.isAuthenticated();
+    Dropbox.isAvailable = function() {
+      return true;
     };
 
     Dropbox.prototype.isReadOnly = function() {
@@ -69,16 +69,42 @@
     };
 
     Dropbox.prototype.open = function(path, flags, mode, cb) {
-      return this.client.readFile(function(error, contents, stat, range) {});
+      var fs;
+      fs = this;
+      return this.client.readFile(path, {}, function(error, contents, stat, range) {
+        return cb(fs, path, mode, stat, contents);
+      });
     };
 
-    Dropbox.prototype.unlink = function(path, cb) {};
+    Dropbox.prototype._remove = function(path, cb) {
+      return this.client.remove(path, function(error, stat) {
+        if (error) {
+          return cb(error);
+        }
+      });
+    };
 
-    Dropbox.prototype.rmdir = function(path, cb) {};
+    Dropbox.prototype.unlink = function(path, cb) {
+      return this._remove(path, cb);
+    };
 
-    Dropbox.prototype.mkdir = function(path, mode, cb) {};
+    Dropbox.prototype.rmdir = function(path, cb) {
+      return this._remove(path, cb);
+    };
 
-    Dropbox.prototype.readdir = function(path, cb) {};
+    Dropbox.prototype.mkdir = function(path, mode, cb) {
+      return this.client.mkdir(path, function(error, stat) {
+        if (error) {
+          return cb(error);
+        }
+      });
+    };
+
+    Dropbox.prototype.readdir = function(path, cb) {
+      return this.client.readdir(path, {}, function(error, files, dir_stat, content_stats) {
+        return cb(error, files);
+      });
+    };
 
     return Dropbox;
 

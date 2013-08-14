@@ -133,6 +133,14 @@
       });
     };
 
+    Dropbox.prototype.writeFile = function(fname, data, encoding, flag, mode, cb) {
+      return this.open(fname, flag, mode, function(error, file) {
+        return file.write(data, 0, data.length, 0, function(error) {
+          return cb(err);
+        });
+      });
+    };
+
     return Dropbox;
 
   })(BrowserFS.FileSystem);

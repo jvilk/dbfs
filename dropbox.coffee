@@ -80,3 +80,11 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
       cb(error, files)
     )
 
+  writeFile: (fname, data, encoding, flag, mode, cb) ->
+    @open(fname, flag, mode, (error, file) ->
+      file.write(data, 0, data.length, 0, (error) ->
+        cb err
+      )
+    )
+
+

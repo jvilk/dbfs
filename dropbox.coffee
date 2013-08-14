@@ -1,5 +1,10 @@
 window.db = window.Dropbox
 
+class BrowserFS.File.DropboxFile extends BrowserFS.PreloadFile
+  syncSync: ->
+
+  closeSync: ->
+
 class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   constructor: ->
     @init_client = new db.Client
@@ -48,7 +53,8 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   open: (path, flags, mode, cb) ->
     fs = this
     @client.readFile(path, {}, (error, contents, stat, range) ->
-      cb(fs, path, mode, stat, contents)
+      file = new BrowserFS.File.DropboxFile(fs, path, mode, stat, contents)
+      cb(error, file)
     )
 
   _remove: (path, cb) ->

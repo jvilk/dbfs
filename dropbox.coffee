@@ -56,8 +56,14 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
 
   open: (path, flags, mode, cb) ->
     fs = this
-    @client.readFile(path, {}, (error, contents, stat, range) ->
-      file = new BrowserFS.File.DropboxFile(fs, path, mode, stat, contents)
+    # Try and get the file's contents
+    @client.readFile(path, (error, content, stat, range) ->
+      if error
+        if error.status is 404
+          content = ''
+          @client.writeFile(path, content, (error) -> console.log(error))
+
+      file = new BrowserFS.File.DropboxFile(fs, path, mode, stat, content)
       cb(error, file)
     )
 

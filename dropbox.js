@@ -165,7 +165,7 @@
                 console.error('No connection');
                 return;
               case 404:
-                console.log("File doesn't exist");
+                console.debug("" + path + " doesn't exist, creating...");
                 content = '';
                 fs.client.writeFile(path, content, function(error, stat) {
                   var file;
@@ -199,7 +199,7 @@
     Dropbox.prototype._remove = function(path, cb) {
       return this.client.remove(path, function(error, stat) {
         if (error) {
-          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "Not deleted " + path));
+          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "Failed to remove " + path));
         } else {
           return cb(null);
         }
@@ -217,7 +217,7 @@
     Dropbox.prototype.mkdir = function(path, mode, cb) {
       return this.client.mkdir(path, function(error, stat) {
         if (error) {
-          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "" + path + " already exists."));
+          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "" + path + " already exists"));
         } else {
           return cb(null);
         }
@@ -246,12 +246,12 @@
       fs = this;
       return fs.client.readFile(fname, function(error, content, stat, range) {
         if (error) {
-          cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file " + fname));
+          cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file: " + fname));
           switch (error.status) {
             case 0:
-              return console.error('No connection');
+              return console.error('No connection to Dropbox');
             case 404:
-              return console.log('File doesnt exist');
+              return console.log("" + fname + " doesn't exist");
             default:
               return console.log(error);
           }

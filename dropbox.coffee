@@ -14,16 +14,17 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
       key: 'u8sx6mjp5bxvbg4'
       sandbox: true
 
+    # Authenticate with pregenerated credentials for unit testing so that it
+    # can be automatic
     if testing
       @init_client.setCredentials({
         key: "u8sx6mjp5bxvbg4",
         token: "mhkmZQTE4PUAAAAAAAAAAYyMdcdkqvPudyYwmuIZp3REM1YvV9skdtstDBYUxuFg",
         uid: "4326179"
       })
+    # Prompt the user to authenticate under normal use
     else
-      @init_client.authDriver(new db.AuthDriver.Redirect({
-        rememberUser: true
-      }))
+      @init_client.authDriver(new db.AuthDriver.Redirect({ rememberUser: true }))
 
     @init_client.authenticate((error, authed_client) =>
       if error
@@ -101,6 +102,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     # Try and get the file's contents
     fs.client.readFile(path, {arrayBuffer: true}, (error, content, db_stat, range) =>
       if error
+        # If the file's being opened for reading and doesn't exist, return an error
         if 'r' in flags
           cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "#{path} doesn't exist "))
         else
@@ -108,8 +110,9 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
             when 0
               console.error('No connection')
               return
+            # If it's being opened for writing, create it so that it can be written to
             when 404
-              console.log("File doesn't exist")
+              console.debug("#{path} doesn't exist, creating...")
               content = ''
               fs.client.writeFile(path, content, (error, stat) ->
                 db_stat = stat
@@ -144,7 +147,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   _remove: (path, cb) ->
     @client.remove(path, (error, stat) ->
       if error
-        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "Not deleted #{path}"))
+        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "Failed to remove #{path}"))
       else
         cb(null)
     )
@@ -156,7 +159,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   mkdir: (path, mode, cb) ->
     @client.mkdir(path, (error, stat) ->
       if error
-        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "#{path} already exists."))
+        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "#{path} already exists"))
       else
         cb(null)
     )
@@ -178,12 +181,12 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     # Try and get the file's contents
     fs.client.readFile(fname, (error, content, stat, range) =>
       if error
-        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file #{fname}"))
+        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file: #{fname}"))
         switch error.status
           when 0
-            console.error('No connection')
+            console.error('No connection to Dropbox')
           when 404
-            console.log('File doesnt exist')
+            console.log("#{fname} doesn't exist")
           else
             console.log(error)
       else

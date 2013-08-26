@@ -2,7 +2,7 @@ window.db = window.Dropbox
 
 class BrowserFS.File.DropboxFile extends BrowserFS.File.PreloadFile
   sync: ->
-    @_fs.client.writeFile(@_path, @_buffer.toString(), (error, stat) ->
+    @_fs.client.writeFile(@_path, @_buffer.buff.getBuffer(), (error, stat) ->
       console.log error if error
     )
 
@@ -116,7 +116,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
               content = ''
               fs.client.writeFile(path, content, (error, stat) ->
                 db_stat = stat
-                file = fs.convertStat(path, mode, db_stat, content)
+                file = fs._convertStat(path, mode, db_stat, content)
                 cb(null, file)
               )
               return
@@ -124,17 +124,20 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
               console.log(error)
               return
       else
-        file = fs.convertStat(path, mode, db_stat, content)
+        file = fs._convertStat(path, mode, db_stat, content)
         cb(null, file)
 
       return
     )
 
-  convertStat: (path, mode, stat, data) ->
-    type = if stat.isFile
+  _statType: (stat) ->
+    if stat.isFile
       BrowserFS.node.fs.Stats.FILE
     else
       BrowserFS.node.fs.Stats.DIRECTORY
+
+  _convertStat: (path, mode, stat, data) ->
+    type = @_statType(stat)
 
     stat = new BrowserFS.node.fs.Stats(type, stat.size)
     data or= ''
@@ -152,10 +155,13 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
         cb(null)
     )
 
+  # Delete a file
   unlink: (path, cb) -> @_remove(path, cb)
 
+  # Delete a directory
   rmdir: (path, cb) -> @_remove(path, cb)
 
+  # Create a directory
   mkdir: (path, mode, cb) ->
     @client.mkdir(path, (error, stat) ->
       if error
@@ -164,29 +170,32 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
         cb(null)
     )
 
+  # Get the names of the files in a directory
   readdir: (path, cb) ->
-    @client.readdir(path, {}, (error, files, dir_stat, content_stats) ->
+    @client.readdir(path, (error, files, dir_stat, content_stats) ->
       cb(error, files)
     )
 
-  writeFile: (fname, data, encoding, flag, mode, cb) ->
+  writeFile: (path, data, encoding, flag, mode, cb) ->
     fs = this
-    @client.writeFile(fname, new BrowserFS.node.Buffer(data, encoding).toString(encoding), (error, stat) ->
-      file = fs.convertStat(fname, mode, stat, data)
+    if typeof data is 'string'
+      data = new BrowserFS.node.Buffer(data, encoding)
+    @client.writeFile(path, data.buff.getBuffer(), (error, stat) ->
+      file = fs.convertStat(path, mode, stat, data)
       cb(null, file)
     )
 
-  readFile: (fname, encoding, flag, cb) ->
+  readFile: (path, encoding, flag, cb) ->
     fs = this
     # Try and get the file's contents
-    fs.client.readFile(fname, (error, content, stat, range) =>
+    fs.client.readFile(path, (error, content, stat, range) =>
       if error
-        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file: #{fname}"))
+        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file: #{path}"))
         switch error.status
           when 0
             console.error('No connection to Dropbox')
           when 404
-            console.log("#{fname} doesn't exist")
+            console.log("#{path} doesn't exist")
           else
             console.log(error)
       else

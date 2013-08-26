@@ -16,7 +16,7 @@
     }
 
     DropboxFile.prototype.sync = function() {
-      return this._fs.client.writeFile(this._path, this._buffer.toString(), function(error, stat) {
+      return this._fs.client.writeFile(this._path, this._buffer.buff.getBuffer(), function(error, stat) {
         if (error) {
           return console.log(error);
         }
@@ -170,7 +170,7 @@
                 fs.client.writeFile(path, content, function(error, stat) {
                   var file;
                   db_stat = stat;
-                  file = fs.convertStat(path, mode, db_stat, content);
+                  file = fs._convertStat(path, mode, db_stat, content);
                   return cb(null, file);
                 });
                 return;
@@ -180,15 +180,23 @@
             }
           }
         } else {
-          file = fs.convertStat(path, mode, db_stat, content);
+          file = fs._convertStat(path, mode, db_stat, content);
           cb(null, file);
         }
       });
     };
 
-    Dropbox.prototype.convertStat = function(path, mode, stat, data) {
+    Dropbox.prototype._statType = function(stat) {
+      if (stat.isFile) {
+        return BrowserFS.node.fs.Stats.FILE;
+      } else {
+        return BrowserFS.node.fs.Stats.DIRECTORY;
+      }
+    };
+
+    Dropbox.prototype._convertStat = function(path, mode, stat, data) {
       var buffer, type;
-      type = stat.isFile ? BrowserFS.node.fs.Stats.FILE : BrowserFS.node.fs.Stats.DIRECTORY;
+      type = this._statType(stat);
       stat = new BrowserFS.node.fs.Stats(type, stat.size);
       data || (data = '');
       buffer = new BrowserFS.node.Buffer(data);
@@ -225,33 +233,36 @@
     };
 
     Dropbox.prototype.readdir = function(path, cb) {
-      return this.client.readdir(path, {}, function(error, files, dir_stat, content_stats) {
+      return this.client.readdir(path, function(error, files, dir_stat, content_stats) {
         return cb(error, files);
       });
     };
 
-    Dropbox.prototype.writeFile = function(fname, data, encoding, flag, mode, cb) {
+    Dropbox.prototype.writeFile = function(path, data, encoding, flag, mode, cb) {
       var fs;
       fs = this;
-      return this.client.writeFile(fname, new BrowserFS.node.Buffer(data, encoding).toString(encoding), function(error, stat) {
+      if (typeof data === 'string') {
+        data = new BrowserFS.node.Buffer(data, encoding);
+      }
+      return this.client.writeFile(path, data.buff.getBuffer(), function(error, stat) {
         var file;
-        file = fs.convertStat(fname, mode, stat, data);
+        file = fs.convertStat(path, mode, stat, data);
         return cb(null, file);
       });
     };
 
-    Dropbox.prototype.readFile = function(fname, encoding, flag, cb) {
+    Dropbox.prototype.readFile = function(path, encoding, flag, cb) {
       var fs,
         _this = this;
       fs = this;
-      return fs.client.readFile(fname, function(error, content, stat, range) {
+      return fs.client.readFile(path, function(error, content, stat, range) {
         if (error) {
-          cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file: " + fname));
+          cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file: " + path));
           switch (error.status) {
             case 0:
               return console.error('No connection to Dropbox');
             case 404:
-              return console.log("" + fname + " doesn't exist");
+              return console.log("" + path + " doesn't exist");
             default:
               return console.log(error);
           }

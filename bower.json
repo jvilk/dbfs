@@ -12,6 +12,7 @@
   ],
   "dependencies": {
     "browserfs": "~0.2.0",
-    "dropbox-build": "*"
+    "dropbox-build": "*",
+    "async": "~0.2.5"
   }
 }

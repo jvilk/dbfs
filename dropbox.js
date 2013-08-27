@@ -16,7 +16,7 @@
     }
 
     DropboxFile.prototype.sync = function() {
-      return this._fs.client.writeFile(this._path, this._buffer.buff.getBuffer(), function(error, stat) {
+      return this._fs.client.writeFile(this._path, this._buffer.buff, function(error, stat) {
         if (error) {
           return console.log(error);
         }
@@ -91,31 +91,34 @@
       return false;
     };
 
-    Dropbox.prototype.empty = function(cb) {
+    Dropbox.prototype.empty = function(main_cb) {
       var fs;
       fs = this;
       return fs.client.readdir('/', function(error, paths, dir, files) {
-        var file, i, status, _i, _len, _results;
-        status = (function() {
-          var _i, _len, _results;
-          _results = [];
-          for (_i = 0, _len = files.length; _i < _len; _i++) {
-            file = files[_i];
-            _results.push(false);
-          }
-          return _results;
-        })();
-        _results = [];
-        for (i = _i = 0, _len = files.length; _i < _len; i = ++_i) {
-          file = files[i];
-          _results.push(fs.client.remove(file.path, function(error, stat) {
-            status[i] = true;
-            if (__indexOf.call(status, false) < 0) {
-              cb();
+        var deleteFile, finished;
+        if (error) {
+          return main_cb(error);
+        } else {
+          deleteFile = function(file, cb) {
+            return fs.client.remove(file.path, function(err, stat) {
+              if (err) {
+                return cb(err);
+              } else {
+                return cb(null);
+              }
+            });
+          };
+          finished = function(err) {
+            if (err) {
+              console.error("Failed to empty Dropbox");
+              return console.error(err);
+            } else {
+              console.debug('Emptied sucessfully');
+              return main_cb();
             }
-          }));
+          };
+          return async.each(files, deleteFile, finished);
         }
-        return _results;
       });
     };
 
@@ -244,9 +247,9 @@
       if (typeof data === 'string') {
         data = new BrowserFS.node.Buffer(data, encoding);
       }
-      return this.client.writeFile(path, data.buff.getBuffer(), function(error, stat) {
+      return this.client.writeFile(path, data.buff, function(error, stat) {
         var file;
-        file = fs.convertStat(path, mode, stat, data);
+        file = fs._convertStat(path, mode, stat, data);
         return cb(null, file);
       });
     };

@@ -2,7 +2,7 @@ window.db = window.Dropbox
 
 class BrowserFS.File.DropboxFile extends BrowserFS.File.PreloadFile
   sync: ->
-    @_fs.client.writeFile(@_path, @_buffer.buff.getBuffer(), (error, stat) ->
+    @_fs.client.writeFile(@_path, @_buffer.buff, (error, stat) ->
       console.log error if error
     )
 
@@ -54,18 +54,28 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
 
   supportsSynch: -> false
 
-  empty: (cb) ->
+  empty: (main_cb) ->
     fs = this
     fs.client.readdir('/', (error, paths, dir, files) ->
-      # XXX: Async hacks
-      status = (false for file in files)
-      for file, i in files
-        fs.client.remove(file.path, (error, stat) ->
-          status[i] = true
-          unless false in status
-            cb()
-            return
-        )
+      if error
+        main_cb(error)
+      else
+        deleteFile = (file, cb) ->
+          fs.client.remove(file.path, (err, stat) ->
+            if err
+              cb(err)
+            else
+              cb(null)
+          )
+        finished = (err) ->
+          if err
+            console.error("Failed to empty Dropbox")
+            console.error(err)
+          else
+            console.debug('Emptied sucessfully')
+            main_cb()
+
+        async.each(files, deleteFile, finished)
     )
 
   rename: (oldPath, newPath, cb) ->
@@ -180,8 +190,8 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     fs = this
     if typeof data is 'string'
       data = new BrowserFS.node.Buffer(data, encoding)
-    @client.writeFile(path, data.buff.getBuffer(), (error, stat) ->
-      file = fs.convertStat(path, mode, stat, data)
+    @client.writeFile(path, data.buff, (error, stat) ->
+      file = fs._convertStat(path, mode, stat, data)
       cb(null, file)
     )
 

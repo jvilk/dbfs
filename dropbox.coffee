@@ -141,9 +141,14 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
       return
     )
 
+  # Private
+  # Returns a BrowserFS object representing the type of a Dropbox.js stat object
   _statType: (stat) ->
     BrowserFS.node.fs.Stats[if stat.isFile then 'FILE' else 'DIRECTORY']
 
+  # Private
+  # Returns a BrowserFS object representing a File, created from the data
+  # returned by calls to the Dropbox API.
   _convertStat: (path, mode, stat, data) ->
     type = @_statType(stat)
 
@@ -155,6 +160,11 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
 
     return new BrowserFS.File.DropboxFile(this, path, mode, stat, buffer)
 
+  # Private
+  # Delete a file or directory from Dropbox
+  # isFile should reflect which call was made to remove the it (`unlink` or
+  # `rmdir`). If this doesn't match what's actually at `path`, an error will be
+  # returned
   _remove: (path, cb, isFile) ->
     fs = this
     fs.client.stat(path, (error, stat) ->

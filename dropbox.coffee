@@ -1,18 +1,22 @@
 window.db = window.Dropbox
 
 class BrowserFS.File.DropboxFile extends BrowserFS.File.PreloadFile
-  sync: ->
+  sync: (cb) ->
     @_fs.client.writeFile(@_path, @_buffer.buff, (error, stat) ->
-      console.log error if error
+      if error
+        cb(error)
+      else
+        cb()
     )
 
-  close: -> @sync()
+  close: (cb) -> @sync(cb)
 
 class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   constructor: (testing=false) ->
-    @init_client = new db.Client
+    @init_client = new db.Client({
       key: 'u8sx6mjp5bxvbg4'
       sandbox: true
+    })
 
     # Authenticate with pregenerated credentials for unit testing so that it
     # can be automatic

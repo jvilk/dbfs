@@ -15,16 +15,18 @@
       return _ref;
     }
 
-    DropboxFile.prototype.sync = function() {
+    DropboxFile.prototype.sync = function(cb) {
       return this._fs.client.writeFile(this._path, this._buffer.buff, function(error, stat) {
         if (error) {
-          return console.log(error);
+          return cb(error);
+        } else {
+          return cb();
         }
       });
     };
 
-    DropboxFile.prototype.close = function() {
-      return this.sync();
+    DropboxFile.prototype.close = function(cb) {
+      return this.sync(cb);
     };
 
     return DropboxFile;

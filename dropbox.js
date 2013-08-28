@@ -126,7 +126,7 @@
       return this.client.move(oldPath, newPath, function(error, stat) {
         var type;
         if (error) {
-          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "" + path + " doesn't exist"));
+          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "" + oldPath + " doesn't exist"));
         } else {
           type = stat.isFile ? BrowserFS.node.fs.Stats.FILE : BrowserFS.node.fs.Stats.DIRECTORY;
           stat = new BrowserFS.node.fs.Stats(type, stat.size);
@@ -207,22 +207,42 @@
       return new BrowserFS.File.DropboxFile(this, path, mode, stat, buffer);
     };
 
-    Dropbox.prototype._remove = function(path, cb) {
-      return this.client.remove(path, function(error, stat) {
+    Dropbox.prototype._remove = function(path, cb, isFile) {
+      var fs;
+      fs = this;
+      return fs.client.stat(path, function(error, stat) {
+        var message;
+        message = null;
         if (error) {
-          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "Failed to remove " + path));
+          return fs.sendError(cb, "" + path + " doesn't exist");
         } else {
-          return cb(null);
+          if (stat.isFile && !isFile) {
+            return fs.sendError(cb, "Can't remove " + path + " with rmdir -- it's a file, not a directory. Use `unlink` instead.");
+          } else if (!stat.isFile && isFile) {
+            return fs.sendError(cb, "Can't remove " + path + " with unlink -- it's a directory, not a file. Use `rmdir` instead.");
+          } else {
+            return fs.client.remove(path, function(error, stat) {
+              if (error) {
+                return fs.sendError(cb, "Failed to remove " + path);
+              } else {
+                return cb(null);
+              }
+            });
+          }
         }
       });
     };
 
+    Dropbox.prototype.sendError = function(cb, msg) {
+      return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, msg));
+    };
+
     Dropbox.prototype.unlink = function(path, cb) {
-      return this._remove(path, cb);
+      return this._remove(path, cb, true);
     };
 
     Dropbox.prototype.rmdir = function(path, cb) {
-      return this._remove(path, cb);
+      return this._remove(path, cb, false);
     };
 
     Dropbox.prototype.mkdir = function(path, mode, cb) {

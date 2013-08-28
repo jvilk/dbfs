@@ -81,7 +81,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   rename: (oldPath, newPath, cb) ->
     @client.move(oldPath, newPath, (error, stat) ->
       if error
-        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "#{path} doesn't exist"))
+        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "#{oldPath} doesn't exist"))
       else
         type = if stat.isFile
           BrowserFS.node.fs.Stats.FILE
@@ -157,19 +157,34 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
 
     return new BrowserFS.File.DropboxFile(this, path, mode, stat, buffer)
 
-  _remove: (path, cb) ->
-    @client.remove(path, (error, stat) ->
+  _remove: (path, cb, isFile) ->
+    fs = this
+    fs.client.stat(path, (error, stat) ->
+      message = null
       if error
-        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "Failed to remove #{path}"))
+        fs.sendError(cb, "#{path} doesn't exist")
       else
-        cb(null)
+        if stat.isFile and not isFile
+          fs.sendError(cb, "Can't remove #{path} with rmdir -- it's a file, not a directory. Use `unlink` instead.")
+        else if not stat.isFile and isFile
+          fs.sendError(cb, "Can't remove #{path} with unlink -- it's a directory, not a file. Use `rmdir` instead.")
+        else
+          fs.client.remove(path, (error, stat) ->
+            if error
+              fs.sendError(cb, "Failed to remove #{path}")
+            else
+              cb(null)
+          )
     )
 
+  sendError: (cb, msg) ->
+    cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, msg))
+
   # Delete a file
-  unlink: (path, cb) -> @_remove(path, cb)
+  unlink: (path, cb) -> @_remove(path, cb, true)
 
   # Delete a directory
-  rmdir: (path, cb) -> @_remove(path, cb)
+  rmdir: (path, cb) -> @_remove(path, cb, false)
 
   # Create a directory
   mkdir: (path, mode, cb) ->
@@ -212,7 +227,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
         if content isnt null
           buffer = new BrowserFS.node.Buffer(content)
 
-        # Dropbox.js seems to set `content` to `null` rather than an empty
+        # Dropbox.js seems to set `content` to `null` rather than to an empty
         # buffer when reading an empty file. Not sure why this is.
         else
           buffer = new BrowserFS.node.Buffer(0)

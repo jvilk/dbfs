@@ -200,6 +200,15 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
 
   # Create a directory
   mkdir: (path, mode, cb) ->
+    # Dropbox.js' client.mkdir() behaves like `mkdir -p`, i.e. it creates a
+    # directory and all its ancestors if they don't exist.
+    # Node's fs.mkdir() behaves like `mkdir`, i.e. it throws an error if an attempt
+    # is made to create a directory without a parent.
+    # To handle this inconsistency, a check for the existence of `path`'s parent
+    # must be performed before it is created, and an error thrown if it does
+    # not exist
+
+    # TODO: implement this check.
     @client.mkdir(path, (error, stat) ->
       if error
         cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "#{path} already exists"))

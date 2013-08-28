@@ -111,9 +111,10 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     fs = this
     # Try and get the file's contents
     fs.client.readFile(path, {arrayBuffer: true}, (error, content, db_stat, range) =>
+      # debugger
       if error
         # If the file's being opened for reading and doesn't exist, return an error
-        if 'r' in flags
+        if 'r' in flags.modeStr
           cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "#{path} doesn't exist "))
         else
           switch error.status

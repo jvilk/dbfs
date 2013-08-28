@@ -160,7 +160,7 @@
       }, function(error, content, db_stat, range) {
         var file;
         if (error) {
-          if (__indexOf.call(flags, 'r') >= 0) {
+          if (__indexOf.call(flags.modeStr, 'r') >= 0) {
             cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "" + path + " doesn't exist "));
           } else {
             switch (error.status) {

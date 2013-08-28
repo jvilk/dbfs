@@ -16,7 +16,7 @@
     }
 
     DropboxFile.prototype.sync = function(cb) {
-      return this._fs.client.writeFile(this._path, this._buffer.buff, function(error, stat) {
+      return this._fs.client.writeFile(this._path, this._buffer.buff.buffer, function(error, stat) {
         if (error) {
           return cb(error);
         } else {
@@ -265,7 +265,7 @@
       if (typeof data === 'string') {
         data = new BrowserFS.node.Buffer(data, encoding);
       }
-      return this.client.writeFile(path, data.buff, function(error, stat) {
+      return this.client.writeFile(path, data.buff.buffer, function(error, stat) {
         var file;
         file = fs._convertStat(path, mode, stat, data);
         return cb(null, file);

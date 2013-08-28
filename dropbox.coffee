@@ -2,7 +2,7 @@ window.db = window.Dropbox
 
 class BrowserFS.File.DropboxFile extends BrowserFS.File.PreloadFile
   sync: (cb) ->
-    @_fs.client.writeFile(@_path, @_buffer.buff, (error, stat) ->
+    @_fs.client.writeFile(@_path, @_buffer.buff.buffer, (error, stat) ->
       if error
         cb(error)
       else
@@ -217,7 +217,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     fs = this
     if typeof data is 'string'
       data = new BrowserFS.node.Buffer(data, encoding)
-    @client.writeFile(path, data.buff, (error, stat) ->
+    @client.writeFile(path, data.buff.buffer, (error, stat) ->
       file = fs._convertStat(path, mode, stat, data)
       cb(null, file)
     )

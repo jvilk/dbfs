@@ -190,11 +190,7 @@
     };
 
     Dropbox.prototype._statType = function(stat) {
-      if (stat.isFile) {
-        return BrowserFS.node.fs.Stats.FILE;
-      } else {
-        return BrowserFS.node.fs.Stats.DIRECTORY;
-      }
+      return BrowserFS.node.fs.Stats[stat.isFile ? 'FILE' : 'DIRECTORY'];
     };
 
     Dropbox.prototype._convertStat = function(path, mode, stat, data) {

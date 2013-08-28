@@ -142,10 +142,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     )
 
   _statType: (stat) ->
-    if stat.isFile
-      BrowserFS.node.fs.Stats.FILE
-    else
-      BrowserFS.node.fs.Stats.DIRECTORY
+    BrowserFS.node.fs.Stats[if stat.isFile then 'FILE' else 'DIRECTORY']
 
   _convertStat: (path, mode, stat, data) ->
     type = @_statType(stat)

@@ -258,19 +258,23 @@
       var fs,
         _this = this;
       fs = this;
-      return fs.client.readFile(path, function(error, content, stat, range) {
+      return fs.client.readFile(path, {
+        arrayBuffer: true
+      }, function(error, content, stat, range) {
+        var buffer;
         if (error) {
-          cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file: " + path));
-          switch (error.status) {
-            case 0:
-              return console.error('No connection to Dropbox');
-            case 404:
-              return console.log("" + path + " doesn't exist");
-            default:
-              return console.log(error);
-          }
+          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file: " + path));
         } else {
-          return cb(null, new BrowserFS.node.Buffer(content, encoding).toString(encoding));
+          if (content !== null) {
+            buffer = new BrowserFS.node.Buffer(content);
+          } else {
+            buffer = new BrowserFS.node.Buffer(0);
+          }
+          if (encoding) {
+            return cb(null, buffer.toString(encoding));
+          } else {
+            return cb(null, buffer);
+          }
         }
       });
     };

@@ -160,33 +160,36 @@
       return fs.client.readFile(path, {
         arrayBuffer: true
       }, function(error, content, db_stat, range) {
-        var file;
+        var buffer, file;
         if (error) {
           if (__indexOf.call(flags.modeStr, 'r') >= 0) {
-            cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "" + path + " doesn't exist "));
+            return fs._sendError(cb, "" + path + " doesn't exist");
           } else {
             switch (error.status) {
               case 0:
                 console.error('No connection');
-                return;
+                break;
               case 404:
                 console.debug("" + path + " doesn't exist, creating...");
-                content = '';
-                fs.client.writeFile(path, content, function(error, stat) {
+                fs.client.writeFile(path, '', function(error, stat) {
                   var file;
                   db_stat = stat;
-                  file = fs._convertStat(path, flags, db_stat, content);
+                  file = fs._convertStat(path, flags, db_stat, new BrowserFS.node.Buffer(0));
                   return cb(null, file);
                 });
-                return;
+                break;
               default:
-                console.log(error);
-                return;
+                return console.log(error);
             }
           }
         } else {
+          if (content === null) {
+            buffer = new BrowserFS.node.Buffer(0);
+          } else {
+            buffer = new BrowserFS.node.Buffer(content);
+          }
           file = fs._convertStat(path, flags, db_stat, content);
-          cb(null, file);
+          return cb(null, file);
         }
       });
     };
@@ -267,44 +270,6 @@
           return cb(error);
         } else {
           return cb(null, files);
-        }
-      });
-    };
-
-    Dropbox.prototype.writeFile = function(path, data, encoding, flag, mode, cb) {
-      var fs;
-      fs = this;
-      if (typeof data === 'string') {
-        data = new BrowserFS.node.Buffer(data, encoding);
-      }
-      return this.client.writeFile(path, data.buff.buffer, function(error, stat) {
-        var file;
-        file = fs._convertStat(path, flag, stat, data);
-        return cb(null, file);
-      });
-    };
-
-    Dropbox.prototype.readFile = function(path, encoding, flag, cb) {
-      var fs,
-        _this = this;
-      fs = this;
-      return fs.client.readFile(path, {
-        arrayBuffer: true
-      }, function(error, content, stat, range) {
-        var buffer;
-        if (error) {
-          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file: " + path));
-        } else {
-          if (content !== null) {
-            buffer = new BrowserFS.node.Buffer(content);
-          } else {
-            buffer = new BrowserFS.node.Buffer(0);
-          }
-          if (encoding) {
-            return cb(null, buffer.toString(encoding));
-          } else {
-            return cb(null, buffer);
-          }
         }
       });
     };

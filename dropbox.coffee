@@ -119,7 +119,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
       if error
         # If the file's being opened for reading and doesn't exist, return an error
         if 'r' in flags.modeStr
-          cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "#{path} doesn't exist "))
+          fs._sendError(cb, "#{path} doesn't exist")
         else
           switch error.status
             when 0
@@ -128,21 +128,25 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
             # If it's being opened for writing, create it so that it can be written to
             when 404
               console.debug("#{path} doesn't exist, creating...")
-              content = ''
-              fs.client.writeFile(path, content, (error, stat) ->
+              fs.client.writeFile(path, '', (error, stat) ->
                 db_stat = stat
-                file = fs._convertStat(path, flags, db_stat, content)
+                file = fs._convertStat(path, flags, db_stat, new BrowserFS.node.Buffer(0))
                 cb(null, file)
               )
               return
             else
               console.log(error)
-              return
+      # No error
       else
+        # Dropbox.js seems to set `content` to `null` rather than to an empty
+        # buffer when reading an empty file. Not sure why this is.
+        if content is null
+          buffer = new BrowserFS.node.Buffer(0)
+        else
+          buffer = new BrowserFS.node.Buffer(content)
+
         file = fs._convertStat(path, flags, db_stat, content)
         cb(null, file)
-
-      return
     )
 
   # Private
@@ -155,12 +159,9 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   # returned by calls to the Dropbox API.
   _convertStat: (path, mode, stat, data) ->
     type = @_statType(stat)
-
     stat = new BrowserFS.node.fs.Stats(type, stat.size)
     data or= ''
-
     buffer = new BrowserFS.node.Buffer(data)
-    # mode = new BrowserFS.FileMode(mode)
 
     return new BrowserFS.File.DropboxFile(this, path, mode, stat, buffer)
 
@@ -232,41 +233,4 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
         cb(error)
       else
         cb(null, files)
-    )
-
-  writeFile: (path, data, encoding, flag, mode, cb) ->
-    fs = this
-    if typeof data is 'string'
-      data = new BrowserFS.node.Buffer(data, encoding)
-    @client.writeFile(path, data.buff.buffer, (error, stat) ->
-      file = fs._convertStat(path, flag, stat, data)
-      cb(null, file)
-    )
-
-  readFile: (path, encoding, flag, cb) ->
-    fs = this
-    # Try and get the file's contents
-    fs.client.readFile(path, {arrayBuffer: true}, (error, content, stat, range) =>
-      if error
-        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "No such file: #{path}"))
-        # switch error.status
-        #   when 0
-        #     console.error('No connection to Dropbox')
-        #   when 404
-        #     console.log("#{path} doesn't exist")
-        #   else
-        #     console.log(error)
-      else
-        if content isnt null
-          buffer = new BrowserFS.node.Buffer(content)
-
-        # Dropbox.js seems to set `content` to `null` rather than to an empty
-        # buffer when reading an empty file. Not sure why this is.
-        else
-          buffer = new BrowserFS.node.Buffer(0)
-
-        if encoding
-          cb(null, buffer.toString(encoding))
-        else
-          cb(null, buffer)
     )

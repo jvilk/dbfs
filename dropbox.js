@@ -212,16 +212,16 @@
         var message;
         message = null;
         if (error) {
-          return fs.sendError(cb, "" + path + " doesn't exist");
+          return fs._sendError(cb, "" + path + " doesn't exist");
         } else {
           if (stat.isFile && !isFile) {
-            return fs.sendError(cb, "Can't remove " + path + " with rmdir -- it's a file, not a directory. Use `unlink` instead.");
+            return fs._sendError(cb, "Can't remove " + path + " with rmdir -- it's a file, not a directory. Use `unlink` instead.");
           } else if (!stat.isFile && isFile) {
-            return fs.sendError(cb, "Can't remove " + path + " with unlink -- it's a directory, not a file. Use `rmdir` instead.");
+            return fs._sendError(cb, "Can't remove " + path + " with unlink -- it's a directory, not a file. Use `rmdir` instead.");
           } else {
             return fs.client.remove(path, function(error, stat) {
               if (error) {
-                return fs.sendError(cb, "Failed to remove " + path);
+                return fs._sendError(cb, "Failed to remove " + path);
               } else {
                 return cb(null);
               }
@@ -231,7 +231,7 @@
       });
     };
 
-    Dropbox.prototype.sendError = function(cb, msg) {
+    Dropbox.prototype._sendError = function(cb, msg) {
       return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, msg));
     };
 
@@ -244,18 +244,31 @@
     };
 
     Dropbox.prototype.mkdir = function(path, mode, cb) {
-      return this.client.mkdir(path, function(error, stat) {
+      var fs, parent;
+      fs = this;
+      parent = BrowserFS.node.path.dirname(path);
+      return fs.client.stat(parent, function(error, stat) {
         if (error) {
-          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "" + path + " already exists"));
+          return fs._sendError(cb, "Can't create " + path + " because " + parent + " doesn't exist");
         } else {
-          return cb(null);
+          return fs.client.mkdir(path, function(error, stat) {
+            if (error) {
+              return fs._sendError(cb, "" + path + " already exists");
+            } else {
+              return cb(null);
+            }
+          });
         }
       });
     };
 
     Dropbox.prototype.readdir = function(path, cb) {
       return this.client.readdir(path, function(error, files, dir_stat, content_stats) {
-        return cb(error, files);
+        if (error) {
+          return cb(error);
+        } else {
+          return cb(null, files);
+        }
       });
     };
 

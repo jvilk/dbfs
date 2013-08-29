@@ -174,22 +174,24 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     fs.client.stat(path, (error, stat) ->
       message = null
       if error
-        fs.sendError(cb, "#{path} doesn't exist")
+        fs._sendError(cb, "#{path} doesn't exist")
       else
         if stat.isFile and not isFile
-          fs.sendError(cb, "Can't remove #{path} with rmdir -- it's a file, not a directory. Use `unlink` instead.")
+          fs._sendError(cb, "Can't remove #{path} with rmdir -- it's a file, not a directory. Use `unlink` instead.")
         else if not stat.isFile and isFile
-          fs.sendError(cb, "Can't remove #{path} with unlink -- it's a directory, not a file. Use `rmdir` instead.")
+          fs._sendError(cb, "Can't remove #{path} with unlink -- it's a directory, not a file. Use `rmdir` instead.")
         else
           fs.client.remove(path, (error, stat) ->
             if error
-              fs.sendError(cb, "Failed to remove #{path}")
+              fs._sendError(cb, "Failed to remove #{path}")
             else
               cb(null)
           )
     )
 
-  sendError: (cb, msg) ->
+  # Private
+  # Create a BrowserFS error object with message msg and pass it to cb
+  _sendError: (cb, msg) ->
     cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, msg))
 
   # Delete a file
@@ -208,18 +210,28 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     # must be performed before it is created, and an error thrown if it does
     # not exist
 
-    # TODO: implement this check.
-    @client.mkdir(path, (error, stat) ->
+    fs = this
+    parent = BrowserFS.node.path.dirname(path)
+
+    fs.client.stat(parent, (error, stat) ->
       if error
-        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "#{path} already exists"))
+        fs._sendError(cb, "Can't create #{path} because #{parent} doesn't exist")
       else
-        cb(null)
+        fs.client.mkdir(path, (error, stat) ->
+          if error
+            fs._sendError(cb, "#{path} already exists")
+          else
+            cb(null)
+        )
     )
 
   # Get the names of the files in a directory
   readdir: (path, cb) ->
     @client.readdir(path, (error, files, dir_stat, content_stats) ->
-      cb(error, files)
+      if error
+        cb(error)
+      else
+        cb(null, files)
     )
 
   writeFile: (path, data, encoding, flag, mode, cb) ->

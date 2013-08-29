@@ -131,7 +131,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
               content = ''
               fs.client.writeFile(path, content, (error, stat) ->
                 db_stat = stat
-                file = fs._convertStat(path, mode, db_stat, content)
+                file = fs._convertStat(path, flags, db_stat, content)
                 cb(null, file)
               )
               return
@@ -139,7 +139,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
               console.log(error)
               return
       else
-        file = fs._convertStat(path, mode, db_stat, content)
+        file = fs._convertStat(path, flags, db_stat, content)
         cb(null, file)
 
       return
@@ -160,7 +160,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     data or= ''
 
     buffer = new BrowserFS.node.Buffer(data)
-    mode = new BrowserFS.FileMode('w')
+    # mode = new BrowserFS.FileMode(mode)
 
     return new BrowserFS.File.DropboxFile(this, path, mode, stat, buffer)
 
@@ -239,7 +239,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     if typeof data is 'string'
       data = new BrowserFS.node.Buffer(data, encoding)
     @client.writeFile(path, data.buff.buffer, (error, stat) ->
-      file = fs._convertStat(path, mode, stat, data)
+      file = fs._convertStat(path, flag, stat, data)
       cb(null, file)
     )
 

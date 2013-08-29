@@ -175,7 +175,7 @@
                 fs.client.writeFile(path, content, function(error, stat) {
                   var file;
                   db_stat = stat;
-                  file = fs._convertStat(path, mode, db_stat, content);
+                  file = fs._convertStat(path, flags, db_stat, content);
                   return cb(null, file);
                 });
                 return;
@@ -185,7 +185,7 @@
             }
           }
         } else {
-          file = fs._convertStat(path, mode, db_stat, content);
+          file = fs._convertStat(path, flags, db_stat, content);
           cb(null, file);
         }
       });
@@ -201,7 +201,6 @@
       stat = new BrowserFS.node.fs.Stats(type, stat.size);
       data || (data = '');
       buffer = new BrowserFS.node.Buffer(data);
-      mode = new BrowserFS.FileMode('w');
       return new BrowserFS.File.DropboxFile(this, path, mode, stat, buffer);
     };
 
@@ -280,7 +279,7 @@
       }
       return this.client.writeFile(path, data.buff.buffer, function(error, stat) {
         var file;
-        file = fs._convertStat(path, mode, stat, data);
+        file = fs._convertStat(path, flag, stat, data);
         return cb(null, file);
       });
     };

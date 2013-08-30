@@ -145,6 +145,10 @@
     Dropbox.prototype.stat = function(path, isLstat, cb) {
       var fs;
       fs = this;
+      if (path === '') {
+        fs._sendError(cb, "Empty string is not a valid path");
+        return;
+      }
       return fs.client.stat(path, function(error, stat) {
         if (error || ((stat != null) && stat.isRemoved)) {
           return fs._sendError(cb, "" + path + " doesn't exist");

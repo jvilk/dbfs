@@ -103,6 +103,11 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
 
   stat: (path, isLstat, cb) ->
     fs = this
+
+    if path is ''
+      fs._sendError(cb, "Empty string is not a valid path")
+      return
+
     fs.client.stat(path, (error, stat) ->
       if error or (stat? and stat.isRemoved)
         fs._sendError(cb, "#{path} doesn't exist")

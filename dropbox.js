@@ -16,6 +16,11 @@
     }
 
     DropboxFile.prototype.sync = function(cb) {
+      if (this._path === '/tmp/append2.txt') {
+        console.debug(this._stat);
+        console.debug(this._pos);
+        console.debug("Writing to " + this._path + ":\n" + (this._buffer.toString()));
+      }
       return this._fs.client.writeFile(this._path, this._buffer.buff.buffer, function(error, stat) {
         if (error) {
           return cb(error);
@@ -138,17 +143,14 @@
     };
 
     Dropbox.prototype.stat = function(path, isLstat, cb) {
-      return this.client.stat(path, {}, function(error, stat) {
-        var type;
-        if (error) {
-          console.log(error);
-          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "doesn't exist " + path));
+      var fs;
+      fs = this;
+      return fs.client.stat(path, function(error, stat) {
+        if (error || ((stat != null) && stat.isRemoved)) {
+          return fs._sendError(cb, "" + path + " doesn't exist");
         } else {
-          type = stat.isFile ? BrowserFS.node.fs.Stats.FILE : BrowserFS.node.fs.Stats.DIRECTORY;
-          stat = new BrowserFS.node.fs.Stats(type, stat.size);
-          return cb({
-            message: path
-          }, stat);
+          stat = new BrowserFS.node.fs.Stats(fs._statType(stat), stat.size);
+          return cb(null, stat);
         }
       });
     };
@@ -157,6 +159,9 @@
       var fs,
         _this = this;
       fs = this;
+      if (path === '/tmp/append2.txt') {
+        debugger;
+      }
       return fs.client.readFile(path, {
         arrayBuffer: true
       }, function(error, content, db_stat, range) {
@@ -183,6 +188,7 @@
             }
           }
         } else {
+          console.debug("size of " + path + ": " + db_stat.size);
           if (content === null) {
             buffer = new BrowserFS.node.Buffer(0);
           } else {

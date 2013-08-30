@@ -2,6 +2,11 @@ window.db = window.Dropbox
 
 class BrowserFS.File.DropboxFile extends BrowserFS.File.PreloadFile
   sync: (cb) ->
+    if @_path is '/tmp/append2.txt'
+      console.debug(@_stat)
+      console.debug(@_pos)
+      console.debug("Writing to #{@_path}:\n#{@_buffer.toString()}")
+
     @_fs.client.writeFile(@_path, @_buffer.buff.buffer, (error, stat) ->
       if error
         cb(error)
@@ -97,25 +102,22 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     )
 
   stat: (path, isLstat, cb) ->
-    @client.stat(path, {}, (error, stat) ->
-      if error
-        console.log(error)
-        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "doesn't exist #{path}"))
+    fs = this
+    fs.client.stat(path, (error, stat) ->
+      if error or (stat? and stat.isRemoved)
+        fs._sendError(cb, "#{path} doesn't exist")
       else
-        type = if stat.isFile
-          BrowserFS.node.fs.Stats.FILE
-        else
-          BrowserFS.node.fs.Stats.DIRECTORY
-
-        stat = new BrowserFS.node.fs.Stats(type, stat.size)
-        cb({message: path}, stat)
+        stat = new BrowserFS.node.fs.Stats(fs._statType(stat), stat.size)
+        cb(null, stat)
     )
 
   open: (path, flags, mode, cb) ->
     fs = this
     # Try and get the file's contents
+    if path is '/tmp/append2.txt'
+      debugger
+
     fs.client.readFile(path, {arrayBuffer: true}, (error, content, db_stat, range) =>
-      # debugger
       if error
         # If the file's being opened for reading and doesn't exist, return an error
         if 'r' in flags.modeStr
@@ -138,6 +140,8 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
               console.log(error)
       # No error
       else
+        console.debug("size of #{path}: #{db_stat.size}")
+
         # Dropbox.js seems to set `content` to `null` rather than to an empty
         # buffer when reading an empty file. Not sure why this is.
         if content is null

@@ -97,16 +97,12 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     )
 
   rename: (oldPath, newPath, cb) ->
-    @client.move(oldPath, newPath, (error, stat) ->
+    self = this
+    self.client.move(oldPath, newPath, (error, stat) ->
       if error
-        cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "#{oldPath} doesn't exist"))
+        self._sendError(cb, "#{oldPath} doesn't exist")
       else
-        type = if stat.isFile
-          BrowserFS.node.fs.Stats.FILE
-        else
-          BrowserFS.node.fs.Stats.DIRECTORY
-
-        stat = new BrowserFS.node.fs.Stats(type, stat.size)
+        stat = new BrowserFS.node.fs.Stats(self._statType(stat), stat.size)
         cb(null, stat)
     )
 

@@ -133,13 +133,13 @@
     };
 
     Dropbox.prototype.rename = function(oldPath, newPath, cb) {
-      return this.client.move(oldPath, newPath, function(error, stat) {
-        var type;
+      var self;
+      self = this;
+      return self.client.move(oldPath, newPath, function(error, stat) {
         if (error) {
-          return cb(new BrowserFS.ApiError(BrowserFS.ApiError.INVALID_PARAM, "" + oldPath + " doesn't exist"));
+          return self._sendError(cb, "" + oldPath + " doesn't exist");
         } else {
-          type = stat.isFile ? BrowserFS.node.fs.Stats.FILE : BrowserFS.node.fs.Stats.DIRECTORY;
-          stat = new BrowserFS.node.fs.Stats(type, stat.size);
+          stat = new BrowserFS.node.fs.Stats(self._statType(stat), stat.size);
           return cb(null, stat);
         }
       });

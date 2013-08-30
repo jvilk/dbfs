@@ -17,7 +17,7 @@ class BrowserFS.File.DropboxFile extends BrowserFS.File.PreloadFile
   close: (cb) -> @sync(cb)
 
 class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
-  constructor: (testing=false) ->
+  constructor: (cb, testing=false) ->
     @init_client = new db.Client({
       key: 'u8sx6mjp5bxvbg4'
       sandbox: true
@@ -46,6 +46,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
       )
 
       @client = authed_client
+      cb(this) if cb
     )
 
   getName: -> 'Dropbox'

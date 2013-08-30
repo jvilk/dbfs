@@ -41,7 +41,7 @@
   BrowserFS.FileSystem.Dropbox = (function(_super) {
     __extends(Dropbox, _super);
 
-    function Dropbox(testing) {
+    function Dropbox(cb, testing) {
       var _this = this;
       if (testing == null) {
         testing = false;
@@ -70,7 +70,10 @@
         authed_client.getUserInfo(function(error, info) {
           return console.debug("Successfully connected to " + info.name + "'s Dropbox");
         });
-        return _this.client = authed_client;
+        _this.client = authed_client;
+        if (cb) {
+          return cb(_this);
+        }
       });
     }
 

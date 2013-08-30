@@ -184,7 +184,7 @@
                 return self.client.writeFile(path, '', function(error, stat) {
                   var buf, file;
                   buf = new BrowserFS.node.Buffer(0);
-                  file = self._convertStat(path, flags, stat, buf);
+                  file = self._makeFile(path, flags, stat, buf);
                   return cb(null, file);
                 });
               default:
@@ -197,7 +197,7 @@
           } else {
             buffer = new BrowserFS.node.Buffer(content);
           }
-          file = self._convertStat(path, flags, db_stat, content);
+          file = self._makeFile(path, flags, db_stat, content);
           return cb(null, file);
         }
       });
@@ -207,7 +207,7 @@
       return BrowserFS.node.fs.Stats[stat.isFile ? 'FILE' : 'DIRECTORY'];
     };
 
-    Dropbox.prototype._convertStat = function(path, mode, stat, data) {
+    Dropbox.prototype._makeFile = function(path, mode, stat, data) {
       var buffer, type;
       type = this._statType(stat);
       stat = new BrowserFS.node.fs.Stats(type, stat.size);

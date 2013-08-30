@@ -152,7 +152,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
               # console.debug("#{path} doesn't exist, creating...")
               self.client.writeFile(path, '', (error, stat) ->
                 buf = new BrowserFS.node.Buffer(0)
-                file = self._convertStat(path, flags, stat, buf)
+                file = self._makeFile(path, flags, stat, buf)
                 cb(null, file)
               )
             else
@@ -168,7 +168,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
         else
           buffer = new BrowserFS.node.Buffer(content)
 
-        file = self._convertStat(path, flags, db_stat, content)
+        file = self._makeFile(path, flags, db_stat, content)
         cb(null, file)
     )
 
@@ -180,7 +180,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   # Private
   # Returns a BrowserFS object representing a File, created from the data
   # returned by calls to the Dropbox API.
-  _convertStat: (path, mode, stat, data) ->
+  _makeFile: (path, mode, stat, data) ->
     type = @_statType(stat)
     stat = new BrowserFS.node.fs.Stats(type, stat.size)
     data or= ''

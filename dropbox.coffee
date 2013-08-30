@@ -125,34 +125,36 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
 
   open: (path, flags, mode, cb) ->
     fs = this
-    # Try and get the file's contents
+
+    # XXX remove this
     if path is '/tmp/append2.txt'
       debugger
 
+    # Try and get the file's contents
     fs.client.readFile(path, {arrayBuffer: true}, (error, content, db_stat, range) =>
       if error
-        # If the file's being opened for reading and doesn't exist, return an error
+        # If the file's being opened for reading and doesn't exist, return an
+        # error
         if 'r' in flags.modeStr
           fs._sendError(cb, "#{path} doesn't exist")
         else
           switch error.status
             when 0
               console.error('No connection')
-              return
-            # If it's being opened for writing, create it so that it can be written to
+            # If it's being opened for writing or appending, create it so that
+            # it can be written to
             when 404
-              console.debug("#{path} doesn't exist, creating...")
+              # console.debug("#{path} doesn't exist, creating...")
               fs.client.writeFile(path, '', (error, stat) ->
-                db_stat = stat
-                file = fs._convertStat(path, flags, db_stat, new BrowserFS.node.Buffer(0))
+                buf = new BrowserFS.node.Buffer(0)
+                file = fs._convertStat(path, flags, stat, buf)
                 cb(null, file)
               )
-              return
             else
-              console.log(error)
+              console.log("Unhandled error: #{error}")
       # No error
       else
-        console.debug("size of #{path}: #{db_stat.size}")
+        # console.debug("size of #{path}: #{db_stat.size}")
 
         # Dropbox.js seems to set `content` to `null` rather than to an empty
         # buffer when reading an empty file. Not sure why this is.

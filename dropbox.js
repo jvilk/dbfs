@@ -176,23 +176,19 @@
           } else {
             switch (error.status) {
               case 0:
-                console.error('No connection');
-                break;
+                return console.error('No connection');
               case 404:
-                console.debug("" + path + " doesn't exist, creating...");
-                fs.client.writeFile(path, '', function(error, stat) {
-                  var file;
-                  db_stat = stat;
-                  file = fs._convertStat(path, flags, db_stat, new BrowserFS.node.Buffer(0));
+                return fs.client.writeFile(path, '', function(error, stat) {
+                  var buf, file;
+                  buf = new BrowserFS.node.Buffer(0);
+                  file = fs._convertStat(path, flags, stat, buf);
                   return cb(null, file);
                 });
-                break;
               default:
-                return console.log(error);
+                return console.log("Unhandled error: " + error);
             }
           }
         } else {
-          console.debug("size of " + path + ": " + db_stat.size);
           if (content === null) {
             buffer = new BrowserFS.node.Buffer(0);
           } else {

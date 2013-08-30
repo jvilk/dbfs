@@ -102,15 +102,15 @@
     };
 
     Dropbox.prototype.empty = function(main_cb) {
-      var fs;
-      fs = this;
-      return fs.client.readdir('/', function(error, paths, dir, files) {
+      var self;
+      self = this;
+      return self.client.readdir('/', function(error, paths, dir, files) {
         var deleteFile, finished;
         if (error) {
           return main_cb(error);
         } else {
           deleteFile = function(file, cb) {
-            return fs.client.remove(file.path, function(err, stat) {
+            return self.client.remove(file.path, function(err, stat) {
               if (err) {
                 return cb(err);
               } else {
@@ -146,45 +146,45 @@
     };
 
     Dropbox.prototype.stat = function(path, isLstat, cb) {
-      var fs;
-      fs = this;
+      var self;
+      self = this;
       if (path === '') {
-        fs._sendError(cb, "Empty string is not a valid path");
+        self._sendError(cb, "Empty string is not a valid path");
         return;
       }
-      return fs.client.stat(path, function(error, stat) {
+      return self.client.stat(path, function(error, stat) {
         if (error || ((stat != null) && stat.isRemoved)) {
-          return fs._sendError(cb, "" + path + " doesn't exist");
+          return self._sendError(cb, "" + path + " doesn't exist");
         } else {
-          stat = new BrowserFS.node.fs.Stats(fs._statType(stat), stat.size);
+          stat = new BrowserFS.node.fs.Stats(self._statType(stat), stat.size);
           return cb(null, stat);
         }
       });
     };
 
     Dropbox.prototype.open = function(path, flags, mode, cb) {
-      var fs,
+      var self,
         _this = this;
-      fs = this;
+      self = this;
       if (path === '/tmp/append2.txt') {
         debugger;
       }
-      return fs.client.readFile(path, {
+      return self.client.readFile(path, {
         arrayBuffer: true
       }, function(error, content, db_stat, range) {
         var buffer, file;
         if (error) {
           if (__indexOf.call(flags.modeStr, 'r') >= 0) {
-            return fs._sendError(cb, "" + path + " doesn't exist");
+            return self._sendError(cb, "" + path + " doesn't exist");
           } else {
             switch (error.status) {
               case 0:
                 return console.error('No connection');
               case 404:
-                return fs.client.writeFile(path, '', function(error, stat) {
+                return self.client.writeFile(path, '', function(error, stat) {
                   var buf, file;
                   buf = new BrowserFS.node.Buffer(0);
-                  file = fs._convertStat(path, flags, stat, buf);
+                  file = self._convertStat(path, flags, stat, buf);
                   return cb(null, file);
                 });
               default:
@@ -197,7 +197,7 @@
           } else {
             buffer = new BrowserFS.node.Buffer(content);
           }
-          file = fs._convertStat(path, flags, db_stat, content);
+          file = self._convertStat(path, flags, db_stat, content);
           return cb(null, file);
         }
       });
@@ -217,22 +217,22 @@
     };
 
     Dropbox.prototype._remove = function(path, cb, isFile) {
-      var fs;
-      fs = this;
-      return fs.client.stat(path, function(error, stat) {
+      var self;
+      self = this;
+      return self.client.stat(path, function(error, stat) {
         var message;
         message = null;
         if (error) {
-          return fs._sendError(cb, "" + path + " doesn't exist");
+          return self._sendError(cb, "" + path + " doesn't exist");
         } else {
           if (stat.isFile && !isFile) {
-            return fs._sendError(cb, "Can't remove " + path + " with rmdir -- it's a file, not a directory. Use `unlink` instead.");
+            return self._sendError(cb, "Can't remove " + path + " with rmdir -- it's a file, not a directory. Use `unlink` instead.");
           } else if (!stat.isFile && isFile) {
-            return fs._sendError(cb, "Can't remove " + path + " with unlink -- it's a directory, not a file. Use `rmdir` instead.");
+            return self._sendError(cb, "Can't remove " + path + " with unlink -- it's a directory, not a file. Use `rmdir` instead.");
           } else {
-            return fs.client.remove(path, function(error, stat) {
+            return self.client.remove(path, function(error, stat) {
               if (error) {
-                return fs._sendError(cb, "Failed to remove " + path);
+                return self._sendError(cb, "Failed to remove " + path);
               } else {
                 return cb(null);
               }
@@ -255,16 +255,16 @@
     };
 
     Dropbox.prototype.mkdir = function(path, mode, cb) {
-      var fs, parent;
-      fs = this;
+      var parent, self;
+      self = this;
       parent = BrowserFS.node.path.dirname(path);
-      return fs.client.stat(parent, function(error, stat) {
+      return self.client.stat(parent, function(error, stat) {
         if (error) {
-          return fs._sendError(cb, "Can't create " + path + " because " + parent + " doesn't exist");
+          return self._sendError(cb, "Can't create " + path + " because " + parent + " doesn't exist");
         } else {
-          return fs.client.mkdir(path, function(error, stat) {
+          return self.client.mkdir(path, function(error, stat) {
             if (error) {
-              return fs._sendError(cb, "" + path + " already exists");
+              return self._sendError(cb, "" + path + " already exists");
             } else {
               return cb(null);
             }

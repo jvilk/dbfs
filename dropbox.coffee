@@ -1,3 +1,5 @@
+# The name `Dropbox` gets clobbered by the filesystem, so save a reference
+# to the Dropbox.js client library
 window.db = window.Dropbox
 
 class BrowserFS.File.DropboxFile extends BrowserFS.File.PreloadFile
@@ -17,6 +19,12 @@ class BrowserFS.File.DropboxFile extends BrowserFS.File.PreloadFile
   close: (cb) -> @sync(cb)
 
 class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
+  # Pass a callback to be executed once the authentication process has finished
+  # DBFS cannot be used before this point. The callback recieves one argument,
+  # the newly constructed FS object, that you can then make calls to.
+  #
+  # Pass a null callback and testing=true to authenticate with pregenerated
+  # credentials for testing.
   constructor: (cb, testing=false) ->
     @init_client = new db.Client({
       key: 'u8sx6mjp5bxvbg4'
@@ -65,13 +73,13 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   supportsSynch: -> false
 
   empty: (main_cb) ->
-    fs = this
-    fs.client.readdir('/', (error, paths, dir, files) ->
+    self = this
+    self.client.readdir('/', (error, paths, dir, files) ->
       if error
         main_cb(error)
       else
         deleteFile = (file, cb) ->
-          fs.client.remove(file.path, (err, stat) ->
+          self.client.remove(file.path, (err, stat) ->
             if err
               cb(err)
             else
@@ -103,41 +111,41 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     )
 
   stat: (path, isLstat, cb) ->
-    fs = this
+    self = this
 
     # Handle empty string case -- doesn't return a Dropbox error, but isn't
     # valid in the node API
     if path is ''
-      fs._sendError(cb, "Empty string is not a valid path")
+      self._sendError(cb, "Empty string is not a valid path")
       return
 
     # Ignore lstat case -- Dropbox doesn't support symlinks
 
     # Stat the file
-    fs.client.stat(path, (error, stat) ->
+    self.client.stat(path, (error, stat) ->
       # Dropbox keeps track of deleted files, so if a file has existed in the
       # past but doesn't any longer, you wont get an error
       if error or (stat? and stat.isRemoved)
-        fs._sendError(cb, "#{path} doesn't exist")
+        self._sendError(cb, "#{path} doesn't exist")
       else
-        stat = new BrowserFS.node.fs.Stats(fs._statType(stat), stat.size)
+        stat = new BrowserFS.node.fs.Stats(self._statType(stat), stat.size)
         cb(null, stat)
     )
 
   open: (path, flags, mode, cb) ->
-    fs = this
+    self = this
 
     # XXX remove this
     if path is '/tmp/append2.txt'
       debugger
 
     # Try and get the file's contents
-    fs.client.readFile(path, {arrayBuffer: true}, (error, content, db_stat, range) =>
+    self.client.readFile(path, {arrayBuffer: true}, (error, content, db_stat, range) =>
       if error
         # If the file's being opened for reading and doesn't exist, return an
         # error
         if 'r' in flags.modeStr
-          fs._sendError(cb, "#{path} doesn't exist")
+          self._sendError(cb, "#{path} doesn't exist")
         else
           switch error.status
             when 0
@@ -146,9 +154,9 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
             # it can be written to
             when 404
               # console.debug("#{path} doesn't exist, creating...")
-              fs.client.writeFile(path, '', (error, stat) ->
+              self.client.writeFile(path, '', (error, stat) ->
                 buf = new BrowserFS.node.Buffer(0)
-                file = fs._convertStat(path, flags, stat, buf)
+                file = self._convertStat(path, flags, stat, buf)
                 cb(null, file)
               )
             else
@@ -164,7 +172,7 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
         else
           buffer = new BrowserFS.node.Buffer(content)
 
-        file = fs._convertStat(path, flags, db_stat, content)
+        file = self._convertStat(path, flags, db_stat, content)
         cb(null, file)
     )
 
@@ -190,20 +198,20 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   # `rmdir`). If this doesn't match what's actually at `path`, an error will be
   # returned
   _remove: (path, cb, isFile) ->
-    fs = this
-    fs.client.stat(path, (error, stat) ->
+    self = this
+    self.client.stat(path, (error, stat) ->
       message = null
       if error
-        fs._sendError(cb, "#{path} doesn't exist")
+        self._sendError(cb, "#{path} doesn't exist")
       else
         if stat.isFile and not isFile
-          fs._sendError(cb, "Can't remove #{path} with rmdir -- it's a file, not a directory. Use `unlink` instead.")
+          self._sendError(cb, "Can't remove #{path} with rmdir -- it's a file, not a directory. Use `unlink` instead.")
         else if not stat.isFile and isFile
-          fs._sendError(cb, "Can't remove #{path} with unlink -- it's a directory, not a file. Use `rmdir` instead.")
+          self._sendError(cb, "Can't remove #{path} with unlink -- it's a directory, not a file. Use `rmdir` instead.")
         else
-          fs.client.remove(path, (error, stat) ->
+          self.client.remove(path, (error, stat) ->
             if error
-              fs._sendError(cb, "Failed to remove #{path}")
+              self._sendError(cb, "Failed to remove #{path}")
             else
               cb(null)
           )
@@ -230,16 +238,16 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
     # must be performed before it is created, and an error thrown if it does
     # not exist
 
-    fs = this
+    self = this
     parent = BrowserFS.node.path.dirname(path)
 
-    fs.client.stat(parent, (error, stat) ->
+    self.client.stat(parent, (error, stat) ->
       if error
-        fs._sendError(cb, "Can't create #{path} because #{parent} doesn't exist")
+        self._sendError(cb, "Can't create #{path} because #{parent} doesn't exist")
       else
-        fs.client.mkdir(path, (error, stat) ->
+        self.client.mkdir(path, (error, stat) ->
           if error
-            fs._sendError(cb, "#{path} already exists")
+            self._sendError(cb, "#{path} already exists")
           else
             cb(null)
         )

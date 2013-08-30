@@ -104,11 +104,18 @@ class BrowserFS.FileSystem.Dropbox extends BrowserFS.FileSystem
   stat: (path, isLstat, cb) ->
     fs = this
 
+    # Handle empty string case -- doesn't return a Dropbox error, but isn't
+    # valid in the node API
     if path is ''
       fs._sendError(cb, "Empty string is not a valid path")
       return
 
+    # Ignore lstat case -- Dropbox doesn't support symlinks
+
+    # Stat the file
     fs.client.stat(path, (error, stat) ->
+      # Dropbox keeps track of deleted files, so if a file has existed in the
+      # past but doesn't any longer, you wont get an error
       if error or (stat? and stat.isRemoved)
         fs._sendError(cb, "#{path} doesn't exist")
       else
